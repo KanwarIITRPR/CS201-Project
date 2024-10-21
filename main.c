@@ -69,6 +69,123 @@ int searchRec(struct KDNode* root, int point[], unsigned depth) {
 int search(struct KDNode* root, int point[]) {
     return searchRec(root, point, 0);
 }
+
+#define DIM 2  // Number of dimensions (2D in this case)
+
+// Structure to represent a point in space
+typedef struct Point {
+    double coords[DIM];  // Coordinates of the point
+} Point;
+
+// Structure to represent a node in the Ball Tree
+typedef struct BallTreeNode {
+    Point center;       // Center of the ball
+    double radius;      // Radius of the ball
+    struct BallTreeNode *left;  // Left subtree
+    struct BallTreeNode *right; // Right subtree
+    Point *points;      // Points stored in this node (for leaf nodes)
+    int numPoints;      // Number of points stored (for leaf nodes)
+} BallTreeNode;
+
+// Function to calculate the Euclidean distance between two points
+double euclideanDistance(Point *p1, Point *p2) {
+    double sum = 0.0;
+    for (int i = 0; i < DIM; i++) {
+        sum += (p1->coords[i] - p2->coords[i]) * (p1->coords[i] - p2->coords[i]);
+    }
+    return sqrt(sum);
+}
+
+// Function to calculate the centroid (center) of a set of points
+Point calculateCentroid(Point *points, int numPoints) {
+    Point centroid = {{0.0}};
+    for (int i = 0; i < numPoints; i++) {
+        for (int j = 0; j < DIM; j++) {
+            centroid.coords[j] += points[i].coords[j];
+        }
+    }
+    for (int j = 0; j < DIM; j++) {
+        centroid.coords[j] /= numPoints;
+    }
+    return centroid;
+}
+
+// Function to calculate the radius of the ball (maximum distance from center)
+double calculateRadius(Point *center, Point *points, int numPoints) {
+    double maxDist = 0.0;
+    for (int i = 0; i < numPoints; i++) {
+        double dist = euclideanDistance(center, &points[i]);
+        if (dist > maxDist) {
+            maxDist = dist;
+        }
+    }
+    return maxDist;
+}
+
+// Function to build a Ball Tree recursively
+BallTreeNode* buildBallTree(Point *points, int numPoints) {
+    if (numPoints == 0) return NULL;
+
+    BallTreeNode *node = (BallTreeNode*)malloc(sizeof(BallTreeNode));
+
+    // Calculate the center (centroid) and radius for the current node
+    node->center = calculateCentroid(points, numPoints);
+    node->radius = calculateRadius(&node->center, points, numPoints);
+
+    if (numPoints <= 2) {  // Base case: if the node has 1 or 2 points, make it a leaf node
+        node->points = points;
+        node->numPoints = numPoints;
+        node->left = node->right = NULL;
+    } else {
+        // Split the points into two groups based on their distance from the centroid
+        Point *leftPoints = (Point*)malloc(sizeof(Point) * numPoints);
+        Point *rightPoints = (Point*)malloc(sizeof(Point) * numPoints);
+        int leftCount = 0, rightCount = 0;
+
+        for (int i = 0; i < numPoints; i++) {
+            if (euclideanDistance(&node->center, &points[i]) < node->radius / 2) {
+                leftPoints[leftCount++] = points[i];
+            } else {
+                rightPoints[rightCount++] = points[i];
+            }
+        }
+
+        // Recursively build the left and right subtrees
+        node->left = buildBallTree(leftPoints, leftCount);
+        node->right = buildBallTree(rightPoints, rightCount);
+        node->points = NULL;  // This is not a leaf node
+        node->numPoints = 0;
+    }
+
+    return node;
+}
+
+// Function to print a Ball Tree (for debugging)
+void printBallTree(BallTreeNode *node, int depth) {
+    if (node == NULL) return;
+
+    for (int i = 0; i < depth; i++) {
+        printf("  ");
+    }
+    printf("Node: Center (%.2f, %.2f), Radius: %.2f\n", node->center.coords[0], node->center.coords[1], node->radius);
+
+    if (node->left == NULL && node->right == NULL) {
+        for (int i = 0; i < depth; i++) {
+            printf("  ");
+        }
+        printf("Leaf: %d points\n", node->numPoints);
+        for (int i = 0; i < node->numPoints; i++) {
+            for (int j = 0; j < DIM; j++) {
+                printf(" %.2f", node->points[i].coords[j]);
+            }
+            printf("\n");
+        }
+    } else {
+        printBallTree(node->left, depth + 1);
+        printBallTree(node->right, depth + 1);
+    }
+}
+
 int main() {
     struct KDNode* root = NULL;
 
