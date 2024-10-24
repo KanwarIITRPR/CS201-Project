@@ -1,210 +1,196 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
-#define K 2  // Dimensionality, here 2D for simplicity
+// Dimensions of the K-D Trees and Ball Trees
+#define DIMENSIONS 2
 
-// Structure to represent a node in the K-D Tree
+// Structing a point in a Hyperspace with "DIMENSIONS" dimensions
+struct Point {
+    double coordinates[DIMENSIONS];
+};
+
+// Structuring K-Dimensional Trees using essential attributes
 struct KDNode {
-    int point[K];  // Array to store k-dimensional point
+    struct Point point;
     struct KDNode* left;
     struct KDNode* right;
 };
 
-// Function to create a new K-D Tree node
-struct KDNode* createNode(int point[]) {
-    struct KDNode* node = (struct KDNode*)malloc(sizeof(struct KDNode));
-    for (int i = 0; i < K; i++)
-        node->point[i] = point[i];
-    node->left = node->right = NULL;
-    return node;
-}
-// Inserts a new point into the KD Tree. Dimension indicates the axis (0 or 1 in 2D)
-struct KDNode* insertRec(struct KDNode* root, int point[], unsigned depth) {
-    // Base case: Empty tree
-    if (root == NULL)
-        return createNode(point);
+struct KDNode* KDRoot = NULL;
 
-    // Current dimension to compare with
-    unsigned cd = depth % K;
+struct Point* createPoint(double coordinates[]) {
+    struct Point* point = (struct Point*) malloc(sizeof(struct Point));
+    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
+        point -> coordinates[dimension] = coordinates[dimension];
+    }
 
-    // Compare the point with the root based on the cd (current dimension) and insert accordingly
-    if (point[cd] < root->point[cd])
-        root->left = insertRec(root->left, point, depth + 1);
-    else
-        root->right = insertRec(root->right, point, depth + 1);
-
-    return root;
+    return point;
 }
 
-// Function to insert a point into the K-D Tree
-struct KDNode* insert(struct KDNode* root, int point[]) {
-    return insertRec(root, point, 0);
-}
-// A utility function to check if two points are the same
-int arePointsSame(int point1[], int point2[]) {
-    for (int i = 0; i < K; ++i)
-        if (point1[i] != point2[i])
+int arePointsSame(struct Point point1, struct Point point2) {
+    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
+        if (point1.coordinates[dimension] != point2.coordinates[dimension]) {
             return 0;
+        }
+    }
     return 1;
 }
 
-// Function to search a point in the K-D Tree
-int searchRec(struct KDNode* root, int point[], unsigned depth) {
-    // Base case: tree is empty or the point is found
-    if (root == NULL)
-        return 0;
-    if (arePointsSame(root->point, point))
-        return 1;
 
-    // Current dimension to compare with
-    unsigned cd = depth % K;
+struct KDNode* createKDNode(double coordinates[]) {
+    struct Point* node_point = createPoint(coordinates);
+    struct KDNode* node = (struct KDNode*) malloc(sizeof(struct KDNode));
 
-    // Compare the point with root and recursively search in the left or right subtree
-    if (point[cd] < root->point[cd])
-        return searchRec(root->left, point, depth + 1);
-    return searchRec(root->right, point, depth + 1);
-}
-
-// Function to search a point in the K-D Tree
-int search(struct KDNode* root, int point[]) {
-    return searchRec(root, point, 0);
-}
-
-#define DIM 2  // Number of dimensions (2D in this case)
-
-// Structure to represent a point in space
-typedef struct Point {
-    double coords[DIM];  // Coordinates of the point
-} Point;
-
-// Structure to represent a node in the Ball Tree
-typedef struct BallTreeNode {
-    Point center;       // Center of the ball
-    double radius;      // Radius of the ball
-    struct BallTreeNode *left;  // Left subtree
-    struct BallTreeNode *right; // Right subtree
-    Point *points;      // Points stored in this node (for leaf nodes)
-    int numPoints;      // Number of points stored (for leaf nodes)
-} BallTreeNode;
-
-// Function to calculate the Euclidean distance between two points
-double euclideanDistance(Point *p1, Point *p2) {
-    double sum = 0.0;
-    for (int i = 0; i < DIM; i++) {
-        sum += (p1->coords[i] - p2->coords[i]) * (p1->coords[i] - p2->coords[i]);
-    }
-    return sqrt(sum);
-}
-
-// Function to calculate the centroid (center) of a set of points
-Point calculateCentroid(Point *points, int numPoints) {
-    Point centroid = {{0.0}};
-    for (int i = 0; i < numPoints; i++) {
-        for (int j = 0; j < DIM; j++) {
-            centroid.coords[j] += points[i].coords[j];
-        }
-    }
-    for (int j = 0; j < DIM; j++) {
-        centroid.coords[j] /= numPoints;
-    }
-    return centroid;
-}
-
-// Function to calculate the radius of the ball (maximum distance from center)
-double calculateRadius(Point *center, Point *points, int numPoints) {
-    double maxDist = 0.0;
-    for (int i = 0; i < numPoints; i++) {
-        double dist = euclideanDistance(center, &points[i]);
-        if (dist > maxDist) {
-            maxDist = dist;
-        }
-    }
-    return maxDist;
-}
-
-// Function to build a Ball Tree recursively
-BallTreeNode* buildBallTree(Point *points, int numPoints) {
-    if (numPoints == 0) return NULL;
-
-    BallTreeNode *node = (BallTreeNode*)malloc(sizeof(BallTreeNode));
-
-    // Calculate the center (centroid) and radius for the current node
-    node->center = calculateCentroid(points, numPoints);
-    node->radius = calculateRadius(&node->center, points, numPoints);
-
-    if (numPoints <= 2) {  // Base case: if the node has 1 or 2 points, make it a leaf node
-        node->points = points;
-        node->numPoints = numPoints;
-        node->left = node->right = NULL;
-    } else {
-        // Split the points into two groups based on their distance from the centroid
-        Point *leftPoints = (Point*)malloc(sizeof(Point) * numPoints);
-        Point *rightPoints = (Point*)malloc(sizeof(Point) * numPoints);
-        int leftCount = 0, rightCount = 0;
-
-        for (int i = 0; i < numPoints; i++) {
-            if (euclideanDistance(&node->center, &points[i]) < node->radius / 2) {
-                leftPoints[leftCount++] = points[i];
-            } else {
-                rightPoints[rightCount++] = points[i];
-            }
-        }
-
-        // Recursively build the left and right subtrees
-        node->left = buildBallTree(leftPoints, leftCount);
-        node->right = buildBallTree(rightPoints, rightCount);
-        node->points = NULL;  // This is not a leaf node
-        node->numPoints = 0;
-    }
-
+    node -> point = *node_point;
+    node -> left = node -> right = NULL;
     return node;
 }
 
-// Function to print a Ball Tree (for debugging)
-void printBallTree(BallTreeNode *node, int depth) {
-    if (node == NULL) return;
-
-    for (int i = 0; i < depth; i++) {
-        printf("  ");
+struct KDNode* insertKDRecursive(double coordinates[], struct KDNode* currentNode, int currentDepth) {
+    if (!currentNode) {
+        return createKDNode(coordinates);
     }
-    printf("Node: Center (%.2f, %.2f), Radius: %.2f\n", node->center.coords[0], node->center.coords[1], node->radius);
 
-    if (node->left == NULL && node->right == NULL) {
-        for (int i = 0; i < depth; i++) {
-            printf("  ");
-        }
-        printf("Leaf: %d points\n", node->numPoints);
-        for (int i = 0; i < node->numPoints; i++) {
-            for (int j = 0; j < DIM; j++) {
-                printf(" %.2f", node->points[i].coords[j]);
-            }
-            printf("\n");
-        }
+    int comparedDimension = currentDepth % DIMENSIONS;
+    if (coordinates[comparedDimension] < currentNode -> point.coordinates[comparedDimension]) {
+        currentNode -> left = insertKDRecursive(currentNode -> left, coordinates, currentDepth + 1);
     } else {
-        printBallTree(node->left, depth + 1);
-        printBallTree(node->right, depth + 1);
+        currentNode -> right = insertKDRecursive(currentNode -> right, coordinates, currentDepth + 1);
+    }
+
+    return currentNode;
+}
+
+void insertKDNode(double coordinates[]) {
+    KDRoot = insertKDRecursive(coordinates, KDRoot, 0);
+}
+
+struct KDNode* searchKDRecursive(double coordinates[], struct KDNode* currentNode, int currentDepth) {
+    if (!currentNode) {
+        return NULL;
+    }
+
+    if (arePointsSame(currentNode -> point, *createPoint(coordinates))) {
+        return currentNode;
+    }
+
+    int comparedDimension = currentDepth % DIMENSIONS;
+    if (coordinates[comparedDimension] < currentNode -> point.coordinates[comparedDimension]) {
+        return searchKDRecursive(currentNode -> left, coordinates, currentDepth + 1);
+    } else {
+        return searchKDRecursive(currentNode -> right, coordinates, currentDepth + 1);
     }
 }
 
+struct KDNode* searchKDNode(double coordinates[]) {
+    return searchKDRecursive(coordinates, KDRoot, 0);
+}
+
+
+struct BTBall {
+    struct Point center;
+    double radius;
+    struct BTBall* left;
+    struct BTBall* right;
+};
+
+struct BTBall* BTRoot = NULL;
+
+double euclideanDistance(struct Point point1, struct Point point2) {
+    double distance = 0;
+    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
+        distance += pow(point1.coordinates[dimension] - point2.coordinates[dimension], 2);
+    }
+
+    return sqrt(distance);
+}
+
+struct Point* subtractPoints(struct Point point1, struct Point point2) {
+    struct Point* resultant = (struct Point*) malloc(sizeof(struct Point));
+    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
+        resultant -> coordinates[dimension] = point1.coordinates[dimension] - point2.coordinates[dimension];
+    }
+
+    return resultant;
+}
+
+double dotProduct(struct Point point1, struct Point point2) {
+    double resultant = 0;
+    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
+        resultant += point1.coordinates[dimension] * point2.coordinates[dimension];
+    }
+
+    return resultant;
+}
+
+
+struct Point* getCentroid(struct Point points[], int numPoints) {
+    struct Point* centroid = (struct Point*) malloc(sizeof(struct Point));
+    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
+        centroid -> coordinates[dimension] = 0;
+        for (int pointIndex = 0; pointIndex < numPoints; pointIndex++) {
+            centroid -> coordinates[dimension] += points[pointIndex].coordinates[dimension];
+        }
+    }
+
+    return centroid;
+}
+
+struct Point getRadiusEndpoint(struct Point center, struct Point points[], int numPoints) {
+    struct Point radiusEndpoint;
+    double maximumDistance = 0;
+
+    for (int pointIndex = 0; pointIndex < numPoints; pointIndex++) {
+        double currentDistance = euclideanDistance(center, points[pointIndex]);
+        if (currentDistance > maximumDistance) {
+            maximumDistance = currentDistance;
+            radiusEndpoint = points[pointIndex];
+        }
+    }
+
+    return radiusEndpoint;
+}
+
+struct BTBall* createBTBall(double coordinates[], double radius) {
+    struct Point* node_point = createPoint(coordinates);
+    struct BTBall* node = (struct BTBall*) malloc(sizeof(struct BTBall));
+
+    node -> center = *node_point;
+    node -> radius = radius;
+    node -> left = node -> right = NULL;
+}
+
+struct BTBall* buildRecursive(struct Point points[], int numPoints) {
+    if (!numPoints) { return NULL; }
+
+    struct Point centroid = *getCentroid(points, numPoints);
+    struct Point radiusEndpoint = getRadiusEndpoint(centroid, points, numPoints);
+    struct BTBall* new_ball = createBTBall(centroid.coordinates, euclideanDistance(centroid, radiusEndpoint));
+
+    struct Point centerPlaneNormal = *subtractPoints(centroid, radiusEndpoint);
+    struct Point leftPoints[numPoints], rightPoints[numPoints];
+    int leftCount = 0, rightCount = 0;
+
+    for (int pointIndex = 0; pointIndex < numPoints; pointIndex++) {
+        if (dotProduct(*subtractPoints(points[pointIndex], new_ball -> center), centerPlaneNormal) < 0) {
+            leftPoints[leftCount++] = points[pointIndex];
+        } else {
+            rightPoints[rightCount++] = points[pointIndex];
+        }
+    }
+
+    new_ball -> left = buildRecursive(leftPoints, leftCount);
+    new_ball -> right = buildRecursive(rightPoints, rightCount);
+
+    return new_ball;
+}
+
+void buildBTBall(struct Point points[], int numPoints) {
+    BTRoot = buildRecursive(points, numPoints);
+}
+
+
 int main() {
-    struct KDNode* root = NULL;
-
-    // Points to be inserted in the K-D Tree
-    int points[][K] = {{3, 6}, {17, 15}, {13, 15}, {6, 12},
-                       {9, 1}, {2, 7}, {10, 19}};
-
-    int n = sizeof(points) / sizeof(points[0]);
-
-    // Insert points into the tree
-    for (int i = 0; i < n; i++)
-        root = insert(root, points[i]);
-
-    // Search for a point in the tree
-    int point[] = {10, 19};
-    if (search(root, point))
-        printf("Point found.\n");
-    else
-        printf("Point not found.\n");
-
     return 0;
 }
