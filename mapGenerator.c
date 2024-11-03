@@ -25,7 +25,7 @@ struct Point* generateRandomMapPoint() {
     double coordinates[DIMENSIONS];
     int float_factor = pow(10, PRECISION);
     for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
-        coordinates[dimension] = (double) (rand() % ((map_size + 1) * float_factor)) / float_factor;
+        coordinates[dimension] = (double) (rand() % ((map_size * float_factor) + 1)) / float_factor;
     }
 
     return createPoint(coordinates);

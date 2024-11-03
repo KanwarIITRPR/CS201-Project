@@ -4,6 +4,9 @@
 
 #define BALL_CAPACITY 2
 
+#ifndef BTBALL_DEFINITION
+
+#define BTBALL_DEFINITION
 struct BTBall {
     struct Point center;
     double radius;
@@ -13,6 +16,8 @@ struct BTBall {
     struct Point* points;
     int numPoints;
 };
+
+#endif
 
 extern struct BTBall* BTRoot;
 

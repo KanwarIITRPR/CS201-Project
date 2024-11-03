@@ -2,11 +2,16 @@
 #include <stdlib.h>
 #include "point.h"
 
+#ifndef KDNODE_DEFINITION
+
+#define KDNODE_DEFINITION
 struct KDNode {
     struct Point point;
     struct KDNode* left;
     struct KDNode* right;
 };
+
+#endif
 
 extern struct KDNode* KDRoot;
 

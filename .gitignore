@@ -1,0 +1,8 @@
+# Ignoring system's Visual Studio settings
+.vscode
+
+# Ignoring all files that are test files
+/test.*
+
+# Ignoring all executable files generated while compiling C code
+/*.exe
