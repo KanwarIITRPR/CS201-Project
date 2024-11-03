@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include "point.h"
 
 #ifndef STORAGE_FILES

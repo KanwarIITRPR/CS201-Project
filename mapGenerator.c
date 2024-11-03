@@ -23,15 +23,15 @@ void extractMapParameters() {
 
 struct Point* generateRandomMapPoint() {
     double coordinates[DIMENSIONS];
+    int float_factor = pow(10, PRECISION);
     for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
-        coordinates[dimension] = rand() % (map_size + 1);
+        coordinates[dimension] = (double) (rand() % ((map_size + 1) * float_factor)) / float_factor;
     }
 
     return createPoint(coordinates);
 }
 
 void generateHouses() {
-    srand(time(0));
     houses = (struct Point*) calloc(num_houses, sizeof(struct Point));
     for (int house_idx = 0; house_idx < num_houses; house_idx++) {
         houses[house_idx] = *generateRandomMapPoint();
@@ -39,7 +39,6 @@ void generateHouses() {
 }
 
 void generateHospitals() {
-    srand(time(0));
     hospitals = (struct Point*) calloc(num_hospitals, sizeof(struct Point));
     for (int hospital_idx = 0; hospital_idx < num_hospitals; hospital_idx++) {
         hospitals[hospital_idx] = *generateRandomMapPoint();
@@ -73,6 +72,7 @@ void storeHospitals() {
 }
 
 void initializeMap() {
+    srand(time(0));
     extractMapParameters();
 
     generateHospitals();

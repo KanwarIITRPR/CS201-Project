@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define PRECISION 2
 #define DIMENSIONS 2
 
 #ifndef POINT_H
