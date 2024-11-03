@@ -45,28 +45,52 @@ void storeBTResults() {
     fclose(file);
 }
 
-void TraverseNodesData(struct KDNode* node, int depth, struct Point lower, struct Point upper) {
+void getConstraints(struct KDNode* target, struct KDNode* node, int depth, struct Point* lower, struct Point* upper) {
+    if (!node) {
+        return;
+    }
+
+    if (arePointsSame(target -> point, node -> point)) {
+        return;
+    }
+
+    int comparingDimension = depth % DIMENSIONS;
+    if (target -> point.coordinates[comparingDimension] < node -> point.coordinates[comparingDimension]) {
+        upper -> coordinates[comparingDimension] = node -> point.coordinates[comparingDimension];
+        getConstraints(target, node -> left, depth + 1, lower, upper);
+    } else {
+        lower -> coordinates[comparingDimension] = node -> point.coordinates[comparingDimension];
+        getConstraints(target, node -> right, depth + 1, lower, upper);
+    }
+
+    return;
+}
+
+void TraverseNodesData(struct KDNode* node, int depth) {
     if (!node) {
         return;
     }
 
     int comparingDimension = depth % DIMENSIONS;
-    lower.coordinates[comparingDimension] = node -> point.coordinates[comparingDimension];
-    upper.coordinates[comparingDimension] = node -> point.coordinates[comparingDimension];
+    struct Point* lower = (struct Point*) malloc(sizeof(struct Point));
+    struct Point* upper = (struct Point*) malloc(sizeof(struct Point));
+    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
+        lower -> coordinates[dimension] = 0;
+        upper -> coordinates[dimension] = map_size;
+    }
+
+    getConstraints(node, KDRoot, 0, lower, upper);
+    lower -> coordinates[comparingDimension] = node -> point.coordinates[comparingDimension];
+    upper -> coordinates[comparingDimension] = node -> point.coordinates[comparingDimension];
 
     nodes[nodes_count] = *node;
-    lower_constraints[nodes_count] = lower;
-    upper_constraints[nodes_count] = upper;
+    lower_constraints[nodes_count] = *lower;
+    upper_constraints[nodes_count] = *upper;
     node_depths[nodes_count] = depth;
     nodes_count++;
 
-    struct Point left_lower = lower, left_upper = upper;
-    struct Point right_lower = lower, right_upper = upper;
-    left_lower.coordinates[comparingDimension] = 0;
-    right_upper.coordinates[comparingDimension] = map_size;
-
-    TraverseNodesData(node -> left, depth + 1, left_lower, left_upper);
-    TraverseNodesData(node -> right, depth + 1, right_lower, right_upper);
+    TraverseNodesData(node -> left, depth + 1);
+    TraverseNodesData(node -> right, depth + 1);
 }
 
 void TraverseBallsData(struct BTBall* ball, int depth) {
@@ -85,14 +109,8 @@ void TraverseBallsData(struct BTBall* ball, int depth) {
 void storeDivisionsData() {
     FILE* file = fopen(kd_storage, "w");
 
-    struct Point origin, limit;
-    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
-        origin.coordinates[dimension] = 0;
-        limit.coordinates[dimension] = map_size;
-    }
-
     nodes_count = 0;
-    TraverseNodesData(KDRoot, 0, origin, limit);
+    TraverseNodesData(KDRoot, 0);
 
     for (int node_idx = 0; node_idx < nodes_count; node_idx++) {
         for (int dimension = 0; dimension < DIMENSIONS; dimension++) {

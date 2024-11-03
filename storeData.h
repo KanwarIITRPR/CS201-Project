@@ -41,7 +41,8 @@ int balls_count;
 void storeKDResults();
 void storeBTResults();
 
-void TraverseNodesData(struct KDNode* node, int depth, struct Point lower, struct Point upper);
+void getConstraints(struct KDNode* target, struct KDNode* node, int depth, struct Point* lower, struct Point* upper);
+void TraverseNodesData(struct KDNode* node, int depth);
 void TraverseBallsData(struct BTBall* ball, int depth);
 
 void storeDivisionsData();

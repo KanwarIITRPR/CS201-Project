@@ -18,22 +18,13 @@ double euclideanDistance(struct Point point1, struct Point point2) {
     return sqrt(distance);
 }
 
-struct Point* subtractPoints(struct Point point1, struct Point point2) {
-    struct Point* resultant = (struct Point*) malloc(sizeof(struct Point));
+int arePointsSame(struct Point point1, struct Point point2) {
     for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
-        resultant -> coordinates[dimension] = point1.coordinates[dimension] - point2.coordinates[dimension];
+        if (point1.coordinates[dimension] != point2.coordinates[dimension]) {
+            return 0;
+        }
     }
-
-    return resultant;
-}
-
-double dotProduct(struct Point point1, struct Point point2) {
-    double resultant = 0;
-    for (int dimension = 0; dimension < DIMENSIONS; dimension++) {
-        resultant += point1.coordinates[dimension] * point2.coordinates[dimension];
-    }
-
-    return resultant;
+    return 1;
 }
 
 void printPoint(struct Point point) {

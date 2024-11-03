@@ -16,7 +16,6 @@ struct Point {
 
 struct Point* createPoint(double coordinates[]);
 double euclideanDistance(struct Point point1, struct Point point2);
-struct Point* subtractPoints(struct Point point1, struct Point point2);
-double dotProduct(struct Point point1, struct Point point2);
+int arePointsSame(struct Point point1, struct Point point2);
 
 void printPoint(struct Point point);
